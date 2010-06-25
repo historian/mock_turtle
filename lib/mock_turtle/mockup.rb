@@ -2,7 +2,7 @@ class MockTurtle::Mockup
 
   require 'nokogiri'
 
-  attr_reader :templates, :path
+  attr_reader :templates, :path, :source
 
   def initialize(source, path)
     @source, @path = source, path

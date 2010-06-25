@@ -1,6 +1,4 @@
-class MockTurtle::Railtie < Rails::Railtie
-
-  # config.mock_turtle = ActiveSupport::OrderedOptions.new
+class MockTurtle::Railtie < Rails::Engine
 
   initializer "mock_turtle.register_handler" do
     ActionView::Template.register_template_handler(:mock, MockTurtle::Handler)
