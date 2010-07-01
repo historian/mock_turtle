@@ -1,10 +1,13 @@
+require 'helsinki'
+
 module MockTurtle
 
   require 'mock_turtle/version'
   require 'mock_turtle/railtie'
   require 'mock_turtle/handler'
-  require 'mock_turtle/template'
   require 'mock_turtle/mockup'
+  # require 'mock_turtle/node_set'
+  require 'mock_turtle/binder'
 
   def self.load!
     app      = Rails.application
@@ -21,7 +24,6 @@ module MockTurtle
         cs = MockTurtle::Mockup.new(
           File.read(path), File.expand_path(path))
         @mockups[cs.path] = cs
-        cs.compile!
       end
     end
   end

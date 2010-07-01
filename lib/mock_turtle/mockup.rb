@@ -8,66 +8,46 @@ class MockTurtle::Mockup
     @source, @path = source, path
   end
 
-  def compile!
-    prepare
-    build_templates
+  def templates
+    @templates || begin
+      prepare
+      @templates
+    end
   end
 
 private
 
   def prepare
-    doc = Nokogiri::HTML(@source)
+    root = Nokogiri::HTML(@source)
 
-    @nodes = {}
+    @templates = {}
 
-    doc.traverse do |node|
-      if node.text? and node.parent.name != 'pre'
-        node.content = node.to_s.gsub(/[ \t]+/, ' ')
-      end
+    root.xpath('//*[@data-remove]').unlink
+    root.xpath('//*[@data-unwrap]').each do |node|
+      node.replace node.children
     end
 
-    doc.xpath('//*[@data-remove]').each do |node|
-      node.unlink if node['data-remove'].blank?
-    end
-
-    doc.xpath('//*[@data-content]').each do |node|
-      node.children.each { |c| c.unlink }
-    end
-
-    doc.xpath('//*[@data-partial]').each do |node|
+    root.xpath('//*[@data-partial]').each do |node|
       name = node['data-partial'].to_s
       node.delete('data-partial')
-      @nodes[name] = node
-      node.unlink
+      @templates[name] = node
     end
 
-    already_yielding = false
-    doc.xpath('//*[@data-view]').each do |node|
+    base = root.dup
+    base.xpath('//*[@data-partial]').unlink
+
+    root.xpath('//*[@data-view]').each do |node|
       name = node['data-view'].to_s
-      node.delete('data-view')
-      @nodes[name] = node
-      unless already_yielding
-        node.before(%Q{<script type="text/ruby">concat(yield)</script>})
-        already_yielding = true
+
+      view = base.dup
+      view.xpath("//*[@data-view!=#{name.inspect}]").unlink
+      view.xpath("//*[@data-view]").each do |node|
+        node.delete('data-view')
       end
-      node.unlink
+
+      @templates[name] = view
     end
 
-    base = File.basename(@path).split('.', 2).first
-    @nodes["layouts/#{base}"] = doc.root
-  end
-
-  def build_templates
-    @templates = {}
-    handler  = MockTurtle::Handler
-    format   = @path.split('.')[-2].to_sym
-
-    @nodes.each do |path, node|
-      template = MockTurtle::Template.new(
-        @source, node, @path+"##{path}", handler,
-        :virtual_path => path, :format => format)
-      @templates[path] = template
-    end
   end
 
 end
